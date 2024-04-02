@@ -65,15 +65,17 @@ const ds = dsFull
 
 ```js
 // Entry time of students helped calculation
-const ds_lastEntryTime = ds.filter(d => d.staff_helped)
-    .derive({ entryHours: aq.escape(d => differenceInMinutes(
-        d.id_timestamp,
-        startOfDay(d.id_timestamp)) / 60)
+const ds_entryTime = ds
+    .derive({
+        entryHours: aq.escape(d => differenceInMinutes(
+            d.id_timestamp,
+            startOfDay(d.id_timestamp)) / 60),
+        staffHelpedString: d => d.staff_helped ? 'Helped' : 'Not helped'
     });
 ```
 <div class="grid grid-cols-2">
     <div class="card">
-        <h2>Distribution per day</h2>
+        <h2>Waiting times over each day</h2>
         ${Plot.plot({
             marks: [
                 Plot.boxY(ds, {y: 'duration', x: 'date'})
@@ -83,14 +85,16 @@ const ds_lastEntryTime = ds.filter(d => d.staff_helped)
         })}
     </div>
     <div class="card">
-        <h2>Entry time of students helped</h2>
-        ${Plot.tickY(ds_lastEntryTime, {
+        <h2>Entry time of students and whether they were helped</h2>
+        ${Plot.tickY(ds_entryTime, {
             x: 'date',
-            y: 'entryHours'
-        }).plot({ x: {type: 'band'}})}
+            y: 'entryHours',
+            stroke: 'staffHelpedString',
+        }).plot({ x: {type: 'band'}, color: {legend: true, scheme: 'Tableau10' }})}
     </div>
 </div>
 
+Select a date to see student wait times over the course of that date.
 ```js
 const inspectInput = view(Inputs.date({
     label: 'Date to inspect',
@@ -104,12 +108,27 @@ const inspectInputLocal = addMinutes(inspectInput, new Date().getTimezoneOffset(
 
 <div class="card">
     <h2>Distribution over a day</h2>
-    ${Plot.dot(
-        ds.filter(aq.escape(d => isSameDay(d.id_timestamp, inspectInputLocal)))
-            .orderby("removedTime")
-            .derive({
-                staff_helped_str: d => d.staff_helped ? "Helped" : "Not helped",
-                removedTimeOffset: aq.escape(d => subtractLocalOffset(d.removedTime))}),
-        {x: "removedTimeOffset", y: "duration", fill: "staff_helped_str" }
-    ).plot({color: {legend: true, scheme: "Category10" }})}
+    ${Plot.plot({
+        marks: [
+            Plot.dot(
+                ds.filter(aq.escape(d => isSameDay(d.removedTime, inspectInputLocal) && isSameDay(d.id_timestamp, inspectInputLocal)))
+                    .orderby("removedTime")
+                    .derive({
+                        staff_helped_str: d => d.staff_helped ? "Helped" : "Not helped",
+                        enteredTimeOffset: aq.escape(d => subtractLocalOffset(d.id_timestamp)),
+                        removedTimeOffset: aq.escape(d => subtractLocalOffset(d.removedTime))}),
+                {x: "enteredTimeOffset", y: "duration", fill: "staff_helped_str" }
+            ),
+            Plot.ruleY([30, 60], {stroke: "gray"})
+        ],
+        color: {legend: true, scheme: "Tableau10" },
+        x: {label: "Student entry time"},
+        y: {label: "Minutes waited"}
+    })}
 </div>
+
+# Service metrics
+
+```js
+ds.groupby('date')
+```

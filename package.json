@@ -1,4 +1,9 @@
 {
+  "name": "dash280",
+  "author": {
+    "name": "Michael Peng",
+    "email": "mipeng@umich.edu"
+  },
   "type": "module",
   "private": true,
   "scripts": {
@@ -9,7 +14,7 @@
     "observable": "observable"
   },
   "dependencies": {
-    "@observablehq/framework": "latest",
+    "@observablehq/framework": "^1.2.0",
     "d3-dsv": "^3.0.1",
     "d3-time-format": "^4.1.0"
   },
